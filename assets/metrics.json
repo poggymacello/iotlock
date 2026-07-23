@@ -1,0 +1,15 @@
+{
+  "none": {
+    "final_survival_pct": 14.33,
+    "time_to_50pct_saturation": 16
+  },
+  "rate_limit": {
+    "final_survival_pct": 99.58,
+    "time_to_50pct_saturation": null
+  },
+  "isolate_failed": {
+    "final_survival_pct": 61.08,
+    "time_to_50pct_saturation": null
+  },
+  "centrality_impact_correlation": 0.9662
+}

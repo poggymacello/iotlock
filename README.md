@@ -1,5 +1,9 @@
 # IoTLock
 
+[![ci](https://github.com/poggymacello/iotlock/actions/workflows/ci.yml/badge.svg)](https://github.com/poggymacello/iotlock/actions/workflows/ci.yml)
+
+**Data: synthetic (see Limitations).** For a version of this portfolio built on a real, labeled dataset with a deployed inference service, see [shadowtrace](https://github.com/poggymacello/shadowtrace).
+
 IoT network resilience analysis: scale-free topology, node criticality, and defensive mitigation, purely as simulation.
 
 ## Problem

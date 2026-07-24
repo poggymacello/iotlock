@@ -1,0 +1,58 @@
+{
+  "n_topologies": 210,
+  "survival_distribution_pct": {
+    "none": {
+      "p10": 6.84,
+      "p25": 11.72,
+      "p50": 18.42,
+      "p75": 25.27,
+      "p90": 29.19,
+      "mean": 18.47
+    },
+    "rate_limit": {
+      "p10": 98.75,
+      "p25": 99.27,
+      "p50": 99.67,
+      "p75": 100.0,
+      "p90": 100.0,
+      "mean": 99.5
+    },
+    "isolate_failed": {
+      "p10": 58.13,
+      "p25": 58.54,
+      "p50": 59.64,
+      "p75": 61.23,
+      "p90": 61.62,
+      "mean": 59.83
+    }
+  },
+  "centrality_impact_correlation_distribution": {
+    "p10": 0.24,
+    "p25": 0.44,
+    "p50": 0.69,
+    "p75": 0.83,
+    "p90": 0.94,
+    "mean": 0.63
+  },
+  "n_topologies_with_valid_correlation": 210,
+  "detection_metrics": {
+    "precision": 0.9983,
+    "recall": 0.9998,
+    "f1": 0.9991,
+    "roc_auc": 1.0,
+    "pr_auc": 1.0,
+    "recall_at_fpr_1pct": 1.0,
+    "recall_at_fpr_5pct": 1.0,
+    "bootstrap_pr_auc_ci": {
+      "point_estimate": 1.0,
+      "ci_lower": 1.0,
+      "ci_upper": 1.0
+    }
+  },
+  "detection_polarity_flag": null,
+  "detection_base_rates": {
+    "train": 0.6666666666666666,
+    "test": 0.6666666666666666
+  },
+  "detection_n_suspicious_features": 17
+}

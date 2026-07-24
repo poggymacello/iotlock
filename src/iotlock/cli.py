@@ -8,8 +8,16 @@ from pathlib import Path
 
 from iotlock import evaluate as eval_mod
 from iotlock.animate import animate_cascade
+from iotlock.artifact import artifact_path_for_version, build_artifact, save_artifact
+from iotlock.botnet_data import DEVICES, device_holdout_split, load_all_devices
+from iotlock.detection import run_detection_pipeline
+from iotlock.mitigation_real_pipeline import (
+    run_centrality_impact_across_topologies,
+    run_mitigation_across_topologies,
+)
 from iotlock.simulation import STRATEGIES, simulate_cascade
 from iotlock.topology import build_topology, compute_centrality
+from iotlock.topology_real import load_topologies
 
 
 def _run_pipeline(n_nodes: int, m: int, n_trials: int, max_timesteps: int, seed: int) -> dict:
@@ -86,6 +94,64 @@ def cmd_eval(args: argparse.Namespace) -> None:
     print(f"centrality-impact correlation: {result['correlation']:.4f}")
 
 
+def cmd_real_train(args: argparse.Namespace) -> None:
+    out_dir = Path(args.output_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    print("loading real Internet Topology Zoo networks...")
+    topologies = load_topologies()
+    print(f"{len(topologies)} connected topologies in range")
+
+    print("running Monte Carlo mitigation across all real topologies...")
+    mitigation = run_mitigation_across_topologies(
+        topologies, n_trials=args.n_trials, seed=args.seed
+    )
+
+    print("revalidating centrality-impact correlation across all real topologies...")
+    centrality = run_centrality_impact_across_topologies(topologies, seed=args.seed)
+
+    print("running the N-BaIoT botnet detector (device-holdout split)...")
+    detection = run_detection_pipeline(seed=args.seed, test_device=args.test_device)
+
+    report = {
+        "n_topologies": mitigation["n_topologies"],
+        "survival_distribution_pct": mitigation["survival_distribution_pct"],
+        "centrality_impact_correlation_distribution": centrality["correlation_distribution"],
+        "n_topologies_with_valid_correlation": centrality["n_topologies_with_valid_correlation"],
+        "detection_metrics": detection["metrics"],
+        "detection_polarity_flag": detection["polarity_flag"],
+        "detection_base_rates": detection["base_rates"],
+        "detection_n_suspicious_features": detection["n_suspicious_features"],
+    }
+    (out_dir / "metrics_real.json").write_text(json.dumps(report, indent=2))
+    print(json.dumps(report, indent=2))
+
+    eval_mod.plot_correlation_distribution(
+        list(centrality["per_topology_correlation"].values()),
+        out_dir / "centrality_vs_impact_real.png",
+    )
+
+    # a representative real topology for the animation: the largest one
+    # in the filtered set, so the cascade's structure is visually legible
+    demo_name, demo_graph = max(topologies, key=lambda t: t[1].number_of_nodes())
+    baseline_history = simulate_cascade(
+        demo_graph, strategy="none", max_timesteps=20, seed=args.seed
+    )
+    anim = animate_cascade(demo_graph, baseline_history)
+    anim.save(out_dir / "simulasi_ddos_real.gif", writer="pillow")
+    print(f"animation topology: {demo_name} ({demo_graph.number_of_nodes()} nodes)")
+
+    print("\ntraining and saving the deployed botnet-detection artifact...")
+    full_dataset = load_all_devices(devices=DEVICES, seed=args.seed)
+    train, _test = device_holdout_split(full_dataset, test_device=args.test_device)
+    artifact = build_artifact(train.X, train.y, test_device=args.test_device, seed=args.seed)
+    path = artifact_path_for_version(Path(args.models_dir))
+    save_artifact(artifact, path)
+    print(f"model artifact written to {path}")
+
+    print(f"\nartifacts written to {out_dir}/")
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="iotlock")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -105,6 +171,19 @@ def build_parser() -> argparse.ArgumentParser:
         "eval", parents=[common], help="re-run the deterministic pipeline and print metrics"
     )
     eval_p.set_defaults(func=cmd_eval)
+
+    real_train_p = sub.add_parser(
+        "real-train",
+        help="run the mitigation + centrality + detection pipelines on real data",
+    )
+    real_train_p.add_argument("--seed", type=int, default=42)
+    real_train_p.add_argument("--n-trials", type=int, default=20)
+    real_train_p.add_argument(
+        "--test-device", default="SimpleHome_XCS7_1003_WHT_Security_Camera"
+    )
+    real_train_p.add_argument("--output-dir", default="assets")
+    real_train_p.add_argument("--models-dir", default="models")
+    real_train_p.set_defaults(func=cmd_real_train)
 
     return parser
 
